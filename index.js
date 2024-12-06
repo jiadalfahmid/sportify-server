@@ -22,24 +22,48 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-
     const db = client.db("EquipmentDB");
     const equipmentCollection = db.collection("equipment");
 
-    
     app.post('/equipment', async (req, res) => {
       const newEquipment = req.body;
+      if (!newEquipment.userEmail) {
+        return res.status(400).send({ message: 'User email is required.' });
+      }
       const result = await equipmentCollection.insertOne(newEquipment);
       res.status(201).send(result);
     });
 
-    
     app.get('/equipment', async (req, res) => {
       const equipment = await equipmentCollection.find().toArray();
       res.send(equipment);
     });
 
-    
+    app.get('/equipment/sorted', async (req, res) => {
+      try {
+        const equipment = await equipmentCollection.find().sort({ price: 1 }).toArray();
+        res.json(equipment);
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch equipment' });
+      }
+    });
+
+    app.get('/equipment/user', async (req, res) => {
+      const userEmail = req.query.email; 
+      if (!userEmail) {
+        return res.status(400).send({ message: 'User email is required.' });
+      }
+      
+      
+      const equipment = await equipmentCollection
+        .find({ userEmail })
+        .sort({ price: 1 }) 
+        .toArray();
+
+      res.send(equipment);
+    });
+
+        
     app.get('/equipment/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -47,7 +71,6 @@ async function run() {
       res.send(equipment);
     });
 
-    
     app.put('/equipment/:id', async (req, res) => {
       const id = req.params.id;
       const updatedEquipment = req.body;
@@ -59,7 +82,6 @@ async function run() {
       res.send(result);
     });
 
-    
     app.delete('/equipment/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -67,22 +89,17 @@ async function run() {
       res.send(result);
     });
 
-    // Confirm successful connection
-    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. Successfully connected to MongoDB!");
   } finally {
-    // Optionally close the client
-    // await client.close();
   }
 }
 
 run().catch(console.dir);
 
-// Root route
+
 app.get('/', (req, res) => {
   res.send('API for Equipment');
 });
-
 
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
