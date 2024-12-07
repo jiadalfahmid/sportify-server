@@ -53,6 +53,18 @@ async function run() {
       if (!userEmail) {
         return res.status(400).send({ message: 'User email is required.' });
       }
+
+      app.get('/equipment/six', async (req, res) => {
+        try {
+          const equipment = await equipmentCollection
+            .find()
+            .limit(6)
+            .toArray();
+          res.send(equipment);
+        } catch (error) {
+          res.status(500).json({ error: 'Failed to fetch 6 items' });
+        }
+      });
       
       
       const equipment = await equipmentCollection
